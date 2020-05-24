@@ -1,4 +1,4 @@
-name: Lua Docker Image CI
+name: Lua Docker - Image CI
 
 on:
   push:
