@@ -14,7 +14,7 @@ on:
   pull_request:
 
 env:
-  IMAGE_NAME: evandarwin/lua-docker
+  IMAGE_NAME: alpine
 
 jobs:
   # Run tests.
