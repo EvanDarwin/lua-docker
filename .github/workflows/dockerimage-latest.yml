@@ -1,9 +1,7 @@
-name: Lua Docker - Image CI
+name: Lua Docker - latest
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
     branches: [ master ]
 
 jobs:
@@ -13,4 +11,4 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag evandarwin/lua:$(cat .lua.release)
+      run: docker build . --file Dockerfile --tag evandarwin/lua:latest
