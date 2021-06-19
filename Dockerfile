@@ -1,7 +1,7 @@
 FROM alpine:latest
 ENV AUTHOR="Evan Darwin <github@relta.net>"
 
-ENV VERSION_LUA="5.3.6"
+ENV VERSION_LUA="5.4.2"
 ENV VERSION_LUAROCKS="3.7.0"
 
 RUN apk add --no-cache libc-dev readline readline-dev unzip make gcc coreutils wget && \
@@ -14,5 +14,6 @@ RUN apk add --no-cache libc-dev readline readline-dev unzip make gcc coreutils w
      wget -O luarocks.tar.gz https://luarocks.org/releases/luarocks-${VERSION_LUAROCKS}.tar.gz && \
      tar zxpf luarocks.tar.gz && cd \
      luarocks-${VERSION_LUAROCKS} && \
-     ./configure && make build && make install && \
-     rm -rf /tmp/lua*
+     ./configure && make build && \
+     make install && \
+     cd / && rm -rf /tmp/lua*
