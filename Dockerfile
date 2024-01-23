@@ -1,8 +1,8 @@
 FROM alpine:latest
 ENV AUTHOR="Evan Darwin <github@relta.net>"
 
-ENV VERSION_LUA="5.3.5"
-ENV VERSION_LUAROCKS="3.3.1"
+ENV VERSION_LUA="5.4.6"
+ENV VERSION_LUAROCKS="3.9.2"
 
 RUN apk add --no-cache libc-dev readline readline-dev unzip make gcc coreutils wget && \
      cd /tmp/ && \
