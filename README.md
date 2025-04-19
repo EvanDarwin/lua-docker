@@ -6,8 +6,8 @@ A simple `alpine` docker image that includes the Lua runtime as well as [LuaRock
 
 ## Features
 
-- Lua 5.4.7 runtime
-- LuaRocks 3.9.2 package manager
+- Multiple Lua versions (5.1.4, 5.2.3, 5.3.4, 5.4.7)
+- LuaRocks 3.11.1 package manager
 - Based on Alpine Linux for a minimal footprint
 - Container attestation and SBOM support
 
@@ -15,10 +15,23 @@ A simple `alpine` docker image that includes the Lua runtime as well as [LuaRock
 
 Several version tags are available for flexibility:
 
-- `evandarwin/lua:5.4.7` - Specific version (e.g., 5.4.7)
-- `evandarwin/lua:5.4` - Major.Minor version (e.g., 5.4)
-- `evandarwin/lua:5` - Major version only (e.g., 5)
+### Lua 5.4.7 (Latest)
+- `evandarwin/lua:5.4.7` - Specific version
+- `evandarwin/lua:5.4` - Major.Minor version
+- `evandarwin/lua:5` - Major version only
 - `evandarwin/lua:latest` - Latest stable release
+
+### Lua 5.3.4
+- `evandarwin/lua:5.3.4` - Specific version
+- `evandarwin/lua:5.3` - Major.Minor version
+
+### Lua 5.2.3
+- `evandarwin/lua:5.2.3` - Specific version 
+- `evandarwin/lua:5.2` - Major.Minor version
+
+### Lua 5.1.4
+- `evandarwin/lua:5.1.4` - Specific version
+- `evandarwin/lua:5.1` - Major.Minor version
 
 We recommend using the specific version tag for production environments to ensure stability, while the less specific tags can be used for development or when you want to automatically get updates.
 
