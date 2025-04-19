@@ -20,10 +20,15 @@ jobs:
     
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-      
-    - name: Configure Docker BuildKit
+    
+    - name: Set image name variables
+      id: image_names
       run: |
-        echo "DOCKER_BUILDKIT=1" >> $GITHUB_ENV
+        DOCKERHUB_IMAGE="evandarwin/lua"
+        GHCR_IMAGE="ghcr.io/${{ github.repository_owner }}/lua"
+        
+        echo "dockerhub_image=$DOCKERHUB_IMAGE" >> $GITHUB_OUTPUT
+        echo "ghcr_image=$GHCR_IMAGE" >> $GITHUB_OUTPUT
         
     - name: Login to Docker Hub
       if: github.event_name != 'pull_request'
@@ -31,6 +36,14 @@ jobs:
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
+        
+    - name: Login to GitHub Container Registry
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
         
     - name: Extract version components
       id: version
@@ -46,25 +59,42 @@ jobs:
     - name: Install Syft for SBOM generation
       run: |
         curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
-        
+    
+    - name: Extract metadata from Docker Hub
+      uses: docker/metadata-action@v4
+      with:
+        images: ${{ steps.image_names.outputs.dockerhub_image }},${{ steps.image_names.outputs.ghcr_image }}
+
     - name: Build and push
+      id: push
       uses: docker/build-push-action@v4
       with:
         context: .
         push: ${{ github.event_name != 'pull_request' }}
         tags: |
-          evandarwin/lua:${{ steps.version.outputs.full_version }}
-          evandarwin/lua:${{ steps.version.outputs.major_minor_version }}
-          evandarwin/lua:${{ steps.version.outputs.major_version }}
-          ${{ matrix.lua-version == '5.4.7' && 'evandarwin/lua:latest' || '' }}
+          ${{ steps.image_names.outputs.dockerhub_image }}:${{ steps.version.outputs.full_version }}
+          ${{ steps.image_names.outputs.dockerhub_image }}:${{ steps.version.outputs.major_minor_version }}
+          ${{ steps.image_names.outputs.dockerhub_image }}:${{ steps.version.outputs.major_version }}
+          ${{ matrix.lua-version == '5.4.7' && format('{0}:latest', steps.image_names.outputs.dockerhub_image) || '' }}
+          ${{ steps.image_names.outputs.ghcr_image }}:${{ steps.version.outputs.full_version }}
+          ${{ steps.image_names.outputs.ghcr_image }}:${{ steps.version.outputs.major_minor_version }}
+          ${{ steps.image_names.outputs.ghcr_image }}:${{ steps.version.outputs.major_version }}
+          ${{ matrix.lua-version == '5.4.7' && format('{0}:latest', steps.image_names.outputs.ghcr_image) || '' }}
         provenance: true
-        outputs: type=image,name=evandarwin/lua:${{ steps.version.outputs.full_version }}
+        outputs: type=image,name=${{ steps.image_names.outputs.dockerhub_image }}:${{ steps.version.outputs.full_version }}
         build-args: |
           BUILD_DATE=${{ github.event.repository.updated_at }}
           VCS_REF=${{ github.sha }}
           LUA_VERSION=${{ matrix.lua-version }}
           LUAROCKS_VERSION=${{ matrix.luarocks-version }}
           
+    - name: Generate artifact attestation
+      uses: actions/attest-build-provenance@v2
+      with:
+        subject-name: index.docker.io/${{ steps.image_names.outputs.dockerhub_image }}
+        subject-digest: ${{ steps.push.outputs.digest }}
+        push-to-registry: true
+
     - name: Generate SBOM
       if: github.event_name != 'pull_request'
       run: |
@@ -72,11 +102,11 @@ jobs:
         mkdir -p sbom
         
         # Generate SBOM in multiple formats
-        syft evandarwin/lua:${{ steps.version.outputs.full_version }} -o spdx-json=sbom/spdx.json
-        syft evandarwin/lua:${{ steps.version.outputs.full_version }} -o cyclonedx-json=sbom/cyclonedx.json
+        syft ${{ steps.image_names.outputs.dockerhub_image }}:${{ steps.version.outputs.full_version }} -o spdx-json=sbom/spdx.json
+        syft ${{ steps.image_names.outputs.dockerhub_image }}:${{ steps.version.outputs.full_version }} -o cyclonedx-json=sbom/cyclonedx.json
         
         # Optional: Generate human-readable text version
-        syft evandarwin/lua:${{ steps.version.outputs.full_version }} -o text=sbom/sbom.txt
+        syft ${{ steps.image_names.outputs.dockerhub_image }}:${{ steps.version.outputs.full_version }} -o text=sbom/sbom.txt
         
     - name: Upload SBOM as artifact
       if: github.event_name != 'pull_request'
