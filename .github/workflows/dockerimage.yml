@@ -2,7 +2,7 @@ name: Lua Docker - Image CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, image-attestation-and-ghcr ]
   pull_request:
     branches: [ main ]
 
