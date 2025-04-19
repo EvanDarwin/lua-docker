@@ -9,6 +9,20 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        lua-version: ['5.0.3', '5.1.4', '5.2.3', '5.3.4', '5.4.7']
+        include:
+          - lua-version: '5.0.3'
+            luarocks-version: '3.11.1'
+          - lua-version: '5.1.4'
+            luarocks-version: '3.11.1'
+          - lua-version: '5.2.3'
+            luarocks-version: '3.11.1'
+          - lua-version: '5.3.4'
+            luarocks-version: '3.11.1'
+          - lua-version: '5.4.7'
+            luarocks-version: '3.11.1'
 
     steps:
     - uses: actions/checkout@v4
@@ -30,7 +44,7 @@ jobs:
     - name: Extract version components
       id: version
       run: |
-        FULL_VERSION=$(cat .lua.release)
+        FULL_VERSION=${{ matrix.lua-version }}
         MAJOR_VERSION=$(echo $FULL_VERSION | cut -d'.' -f1)
         MAJOR_MINOR_VERSION=$(echo $FULL_VERSION | cut -d'.' -f1,2)
         
@@ -51,13 +65,14 @@ jobs:
           evandarwin/lua:${{ steps.version.outputs.full_version }}
           evandarwin/lua:${{ steps.version.outputs.major_minor_version }}
           evandarwin/lua:${{ steps.version.outputs.major_version }}
-          evandarwin/lua:latest
+          ${{ matrix.lua-version == '5.4.7' && 'evandarwin/lua:latest' || '' }}
         provenance: true
-        outputs: type=image,name=evandarwin/lua
+        outputs: type=image,name=evandarwin/lua:${{ steps.version.outputs.full_version }}
         build-args: |
           BUILD_DATE=${{ github.event.repository.updated_at }}
           VCS_REF=${{ github.sha }}
-          VERSION=${{ steps.version.outputs.full_version }}
+          LUA_VERSION=${{ matrix.lua-version }}
+          LUAROCKS_VERSION=${{ matrix.luarocks-version }}
           
     - name: Generate SBOM
       if: github.event_name != 'pull_request'
@@ -76,6 +91,6 @@ jobs:
       if: github.event_name != 'pull_request'
       uses: actions/upload-artifact@v4
       with:
-        name: sbom-files
+        name: sbom-files-${{ matrix.lua-version }}
         path: sbom/
         retention-days: 90

@@ -3,12 +3,12 @@ FROM alpine:latest
 # Build arguments
 ARG BUILD_DATE
 ARG VCS_REF
-ARG VERSION
+ARG LUA_VERSION
 
 # Set metadata labels
 LABEL org.opencontainers.image.created="${BUILD_DATE}" \
      org.opencontainers.image.revision="${VCS_REF}" \
-     org.opencontainers.image.version="${VERSION}" \
+     org.opencontainers.image.version="${LUA_VERSION}" \
      org.opencontainers.image.authors="Evan Darwin <github@relta.net>" \
      org.opencontainers.image.url="https://github.com/evandarwin/lua-docker" \
      org.opencontainers.image.documentation="https://github.com/evandarwin/lua-docker/blob/master/README.md" \
@@ -16,8 +16,9 @@ LABEL org.opencontainers.image.created="${BUILD_DATE}" \
 
 ENV AUTHOR="Evan Darwin <github@relta.net>"
 
-ENV VERSION_LUA="${VERSION:-5.4.7}"
-ENV VERSION_LUAROCKS="3.9.2"
+# Lua and LuaRocks versions (can be overridden at build time)
+ENV VERSION_LUA="${LUA_VERSION:-5.4.7}"
+ENV VERSION_LUAROCKS="${LUAROCKS_VERSION:-3.11.1}"
 
 RUN apk add --no-cache libc-dev readline readline-dev unzip make gcc coreutils wget && \
      cd /tmp/ && \
