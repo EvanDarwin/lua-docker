@@ -2,7 +2,7 @@ name: Lua Docker - Image CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, ci-changes ]
   pull_request:
     branches: [ master ]
 
@@ -11,6 +11,71 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag evandarwin/lua:$(cat .lua.release)
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Configure Docker BuildKit
+      run: |
+        echo "DOCKER_BUILDKIT=1" >> $GITHUB_ENV
+        
+    - name: Login to Docker Hub
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        
+    - name: Extract version components
+      id: version
+      run: |
+        FULL_VERSION=$(cat .lua.release)
+        MAJOR_VERSION=$(echo $FULL_VERSION | cut -d'.' -f1)
+        MAJOR_MINOR_VERSION=$(echo $FULL_VERSION | cut -d'.' -f1,2)
+        
+        echo "full_version=$FULL_VERSION" >> $GITHUB_OUTPUT
+        echo "major_version=$MAJOR_VERSION" >> $GITHUB_OUTPUT
+        echo "major_minor_version=$MAJOR_MINOR_VERSION" >> $GITHUB_OUTPUT
+
+    - name: Install Syft for SBOM generation
+      run: |
+        curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+        
+    - name: Build and push
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: |
+          evandarwin/lua:${{ steps.version.outputs.full_version }}
+          evandarwin/lua:${{ steps.version.outputs.major_minor_version }}
+          evandarwin/lua:${{ steps.version.outputs.major_version }}
+          evandarwin/lua:latest
+        provenance: true
+        outputs: type=image,name=evandarwin/lua
+        build-args: |
+          BUILD_DATE=${{ github.event.repository.updated_at }}
+          VCS_REF=${{ github.sha }}
+          VERSION=${{ steps.version.outputs.full_version }}
+          
+    - name: Generate SBOM
+      if: github.event_name != 'pull_request'
+      run: |
+        # Create output directory
+        mkdir -p sbom
+        
+        # Generate SBOM in multiple formats
+        syft evandarwin/lua:${{ steps.version.outputs.full_version }} -o spdx-json=sbom/spdx.json
+        syft evandarwin/lua:${{ steps.version.outputs.full_version }} -o cyclonedx-json=sbom/cyclonedx.json
+        
+        # Optional: Generate human-readable text version
+        syft evandarwin/lua:${{ steps.version.outputs.full_version }} -o text=sbom/sbom.txt
+        
+    - name: Upload SBOM as artifact
+      if: github.event_name != 'pull_request'
+      uses: actions/upload-artifact@v4
+      with:
+        name: sbom-files
+        path: sbom/
+        retention-days: 90
