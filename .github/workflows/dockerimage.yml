@@ -104,6 +104,13 @@ jobs:
         subject-name: index.docker.io/${{ steps.image_names.outputs.dockerhub_image }}
         subject-digest: ${{ steps.push.outputs.digest }}
         push-to-registry: true
+        
+    - name: Generate artifact attestation for GitHub Container Registry
+      uses: actions/attest-build-provenance@v2
+      with:
+        subject-name: ghcr.io/${{ steps.image_names.outputs.ghcr_image }}
+        subject-digest: ${{ steps.push.outputs.digest }}
+        push-to-registry: true
 
     - name: Generate SBOM
       if: github.event_name != 'pull_request'
