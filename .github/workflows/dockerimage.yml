@@ -6,6 +6,12 @@ on:
   pull_request:
     branches: [ main ]
 
+# Add permissions needed for GitHub Container Registry
+permissions:
+  contents: read
+  packages: write
+  id-token: write # Needed for OIDC token issuance for attestation
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -25,9 +31,9 @@ jobs:
       id: image_names
       run: |
         DOCKERHUB_IMAGE="evandarwin/lua"
+        # Convert GitHub repository owner to lowercase using tr
         OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
         GHCR_IMAGE="ghcr.io/${OWNER}/lua"
-        
         echo "dockerhub_image=$DOCKERHUB_IMAGE" >> $GITHUB_OUTPUT
         echo "ghcr_image=$GHCR_IMAGE" >> $GITHUB_OUTPUT
         
@@ -81,15 +87,17 @@ jobs:
           ${{ steps.image_names.outputs.ghcr_image }}:${{ steps.version.outputs.major_minor_version }}
           ${{ steps.image_names.outputs.ghcr_image }}:${{ steps.version.outputs.major_version }}
           ${{ matrix.lua-version == '5.4.7' && format('{0}:latest', steps.image_names.outputs.ghcr_image) || '' }}
-        provenance: true
-        outputs: type=image,name=${{ steps.image_names.outputs.dockerhub_image }}:${{ steps.version.outputs.full_version }}
+        # Enable provenance attestation for both registries
+        provenance: mode=max
+        outputs: |
+          type=image,name=${{ steps.image_names.outputs.dockerhub_image }}:${{ steps.version.outputs.full_version }}
         build-args: |
           BUILD_DATE=${{ github.event.repository.updated_at }}
           VCS_REF=${{ github.sha }}
           LUA_VERSION=${{ matrix.lua-version }}
           LUAROCKS_VERSION=${{ matrix.luarocks-version }}
           
-    - name: Generate artifact attestation
+    - name: Generate artifact attestation for Docker Hub
       uses: actions/attest-build-provenance@v2
       with:
         subject-name: index.docker.io/${{ steps.image_names.outputs.dockerhub_image }}
