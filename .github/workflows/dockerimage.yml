@@ -25,7 +25,8 @@ jobs:
       id: image_names
       run: |
         DOCKERHUB_IMAGE="evandarwin/lua"
-        GHCR_IMAGE="ghcr.io/${{ github.repository_owner }}/lua"
+        OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+        GHCR_IMAGE="ghcr.io/${OWNER}/lua"
         
         echo "dockerhub_image=$DOCKERHUB_IMAGE" >> $GITHUB_OUTPUT
         echo "ghcr_image=$GHCR_IMAGE" >> $GITHUB_OUTPUT
