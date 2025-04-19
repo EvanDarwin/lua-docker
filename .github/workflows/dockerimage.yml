@@ -2,7 +2,7 @@ name: Lua Docker - Image CI
 
 on:
   push:
-    branches: [ master, ci-changes ]
+    branches: [ master, time-travel ]
   pull_request:
     branches: [ master ]
 
